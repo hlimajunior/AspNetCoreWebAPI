@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartSchool.WebAPI.Data;
 using SmartSchool.WebAPI.Models;
-using System.Collections.Generic;
 using System.Linq;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -13,18 +12,20 @@ namespace SmartSchool.WebAPI.Controllers
     [Route("api/[controller]")]
     public class AlunoController : ControllerBase
     {
-        private readonly SmartContext _context;
+        private readonly IRepository _repo;
 
-        public AlunoController(SmartContext context)
+        public AlunoController(IRepository repo)
         {
-            _context = context;
+            _repo = repo;
         }
+
 
         // GET: api/<AlunoController>
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok(_context.Alunos);
+            var result = _repo.GetAllAlunos(true);
+            return Ok(result);
         }
 
         // GET api/<AlunoController>/5
@@ -51,9 +52,14 @@ namespace SmartSchool.WebAPI.Controllers
         [HttpPost]
         public IActionResult Post(Aluno aluno)
         {
-            _context.Add(aluno);
-            _context.SaveChanges();
-            return Ok(aluno);
+            _repo.Add(aluno);
+            if (_repo.SaveChanges())
+            {
+                return Ok(aluno);
+            }
+
+            return BadRequest("Aluno não cadastrado");
+
         }
 
 
@@ -64,9 +70,14 @@ namespace SmartSchool.WebAPI.Controllers
             if (alu == null)
                 return BadRequest("Aluno não encontrado!");
 
-            _context.Update(aluno);
-            _context.SaveChanges();
-            return Ok(aluno);
+            _repo.Update(aluno);
+            if (_repo.SaveChanges())
+            {
+                return Ok(aluno);
+            }
+
+            return BadRequest("Aluno não atualizado");
+
         }
 
         [HttpPatch("{id}")]
@@ -76,21 +87,30 @@ namespace SmartSchool.WebAPI.Controllers
             if (alu == null)
                 return BadRequest("Aluno não encontrado!");
 
-            _context.Update(aluno);
-            _context.SaveChanges();
-            return Ok(aluno);
+            _repo.Update(aluno);
+            if (_repo.SaveChanges())
+            {
+                return Ok(aluno);
+            }
+
+            return BadRequest("Aluno não atualizado");
+
         }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            var alu = _context.Alunos.FirstOrDefault(a => a.Id == id);
-            if (alu == null)
+            var alunoId = _context.Alunos.FirstOrDefault(a => a.Id == id);
+            if (alunoId == null)
                 return BadRequest("Aluno não encontrado!");
 
-            _context.Remove(alu);
-            _context.SaveChanges();
-            return Ok();
+            _repo.Delete(alunoId);
+            if (_repo.SaveChanges())
+            {
+                return Ok("Aluno excluído");
+            }
+
+            return BadRequest("Aluno não excluído");
         }
 
     }
